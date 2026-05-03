@@ -6,8 +6,7 @@
   "author": "SatoshiMota",
   "permissions": [
     "scripting",
-    "tabs",
-    "storage"
+    "tabs"
   ],
   "host_permissions": [
     "http://*/*",
