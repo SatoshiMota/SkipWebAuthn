@@ -1,5 +1,3 @@
-// Ключ "webauthn_credentials" для использования позже нужно сохранять из текущего сайта LocalStorage (ну это для эмитации того что делает windwos hello хранит этот ключ годами)
-
 (function(global, undefined) { "use strict";
 var POW_2_24 = Math.pow(2, -24),
     POW_2_32 = Math.pow(2, 32),
