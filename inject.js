@@ -464,7 +464,15 @@ else if (!global.CBOR)
         loadCredentials() {
             try {
                 const stored = localStorage.getItem('webauthn_credentials');
-                return stored ? new Map(JSON.parse(stored)) : new Map();
+                if (!stored) return new Map();
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0 && Array.isArray(parsed[0])) {
+                    return new Map(parsed);
+                }
+                if (Array.isArray(parsed)) {
+                    return new Map(parsed.map(c => [c.id, c]));
+                }
+                return new Map(Object.entries(parsed));
             } catch (e) {
                 return new Map();
             }
@@ -472,8 +480,9 @@ else if (!global.CBOR)
     
         saveCredentials(credentials) {
             try {
-                const data = JSON.stringify(Array.from(credentials.entries()));
+                const data = JSON.stringify(Array.from(credentials.values()));
                 localStorage.setItem('webauthn_credentials', data);
+                window.dispatchEvent(new CustomEvent('webauthn_credentials_updated'));
             } catch (e) {
                 console.error('Failed to save credentials:', e);
             }
@@ -501,10 +510,10 @@ else if (!global.CBOR)
             const publicKey = options.publicKey;
             const rpId = publicKey.rp.id;
 
-            for (const [id, cred] of credentials) {
-                if (cred.rpId === rpId) {
-                    credentials.delete(id);
-                }
+            const rpCreds = [...credentials.entries()].filter(([, c]) => c.rpId === rpId);
+            if (rpCreds.length >= 100) {
+                rpCreds.sort((a, b) => new Date(a[1].createdAt) - new Date(b[1].createdAt));
+                credentials.delete(rpCreds[0][0]);
             }
         
             const challenge = new Uint8Array(publicKey.challenge);
@@ -518,7 +527,6 @@ else if (!global.CBOR)
             }
         
             const algorithm = String(supportedAlg.alg);
-            console.log('🔧 Using algorithm:', algorithm);
         
             const keyPair = await this.generateKeyPair(algorithm);
             const credentialId = crypto.getRandomValues(new Uint8Array(32));
@@ -535,6 +543,7 @@ else if (!global.CBOR)
                 publicKey: arrayBufferToBase64(publicKeyData),
                 algorithm: algorithm,
                 rpId: rpId,
+                userName: publicKey.user.name || '',
                 userHandle: typeof publicKey.user.id === 'string' 
                     ? publicKey.user.id 
                     : arrayBufferToBase64(publicKey.user.id),
@@ -544,7 +553,6 @@ else if (!global.CBOR)
         
             credentials.set(credentialIdB64, credential);
             this.saveCredentials(credentials);
-            console.log('💾 Saved credential:', credentialIdB64);
 
             const clientDataJSON = this.createClientDataJSON('webauthn.create', challenge, location.origin);
             
@@ -825,7 +833,6 @@ else if (!global.CBOR)
     navigator.credentials.create = async function(options) {
         if (options && options.publicKey) {
             const result = await virtualAuth.create(options);
-            console.log('📤 Returning credential to page:', result.id);
             return result;
         }
         return originalCreate.call(this, options);
@@ -838,5 +845,4 @@ else if (!global.CBOR)
         return originalGet.call(this, options);
     };
 
-    console.log('✅ Virtual WebAuthn Authenticator initialized');
 })();
