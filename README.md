@@ -1,3 +1,4 @@
 # SkipWebAuthn
+https://chromewebstore.google.com/detail/skipwebauthn/hfdehnmjfffdmdmmkdmpcoojpcojfcbg
 <img width="1280" height="800" alt="Без имени-2" src="https://github.com/user-attachments/assets/205fc617-9870-45ad-96e4-42924a5b02b9" />
 Browser extension for automatically signing WebAuthn requests by intercepting navigator.credentials.create and navigator.credentials.get requests, support for all 3 types of cryptographic algorithms ['-7','-257','-8']. The extension stores the key that Windows Hello and other WebAuthn request handlers store in the TPM in the current site's LocalStorage under the key "webauthn_credentials." This means that the value can be exported and, at any time, even after a year, reimported into the site's storage/cookies (and the extension will automatically find it during the next "get" request and be able to sign it). So, you essentially store the key yourself and can see it (unlike the TPM contents, which cannot be read or exported).
